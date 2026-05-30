@@ -1,0 +1,216 @@
+/* Custom mini player — layout inspired by adityad.as */
+
+music-player {
+  display: block;
+  position: fixed;
+  right: clamp(0.75rem, 2.5vw, 1.25rem);
+  bottom: calc(var(--site-footer-h) - 1rem);
+  z-index: 50;
+  max-width: calc(100vw - 1.5rem);
+  --player-stroke: 5px;
+  --player-radius: 10px;
+  --cover-size: 56px;
+}
+
+.music-player__bar {
+  position: relative;
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 1.5rem));
+  padding: 10px 12px;
+  background-color: #282828;
+  border: var(--player-stroke) solid rgba(224, 191, 196, 0.5);
+  border-radius: var(--player-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  transition: width 0.22s ease;
+}
+
+/* Idle: cover only on black */
+music-player:not(.is-expanded) .music-player__bar {
+  width: calc(var(--cover-size) + var(--player-stroke) * 2);
+  padding: 0;
+  background-color: #000;
+  border-radius: 8px;
+}
+
+music-player:not(.is-expanded) .music-player__logo,
+music-player:not(.is-expanded) .music-player__meta,
+music-player:not(.is-expanded) .music-player__progress,
+music-player:not(.is-expanded) .music-player__controls {
+  display: none;
+}
+
+music-player:not(.is-expanded) .music-player__main {
+  gap: 0;
+}
+
+music-player:not(.is-expanded) .music-player__info {
+  padding: 0;
+  gap: 0;
+}
+
+music-player:not(.is-expanded) .music-player__cover {
+  cursor: pointer;
+}
+
+.music-player__logo {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  width: 10px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.music-player__main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Row: cover + song / artist */
+.music-player__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 20px;
+}
+
+/* Cover stays the same size in idle and expanded — never scales */
+.music-player__cover {
+  flex-shrink: 0;
+  width: var(--cover-size);
+  height: var(--cover-size);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: #e0bfc4;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: default;
+  appearance: none;
+}
+
+.music-player__cover:focus {
+  outline: none;
+}
+
+music-player:not(.is-expanded) .music-player__cover:focus-visible {
+  outline: 2px solid #e0bfc4;
+  outline-offset: 2px;
+}
+
+.music-player__meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.music-player__title {
+  margin: 0;
+  font-family: "Cooper", serif;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #fbfaf5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-player__artist {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  line-height: 1.2;
+  color: rgba(251, 250, 245, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress line */
+.music-player__progress {
+  width: 100%;
+  height: 2px;
+  background-color: rgba(251, 250, 245, 0.2);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.music-player__progress-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background-color: #e0bfc4;
+  border-radius: 1px;
+  transition: width 0.15s linear;
+}
+
+/* Controls below cover + title (like adityad.as) */
+.music-player__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding-top: 2px;
+}
+
+.music-player__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.music-player__icon {
+  display: block;
+  height: 10px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.music-player__btn--play {
+  gap: 0;
+}
+
+.music-player__btn:hover .music-player__icon {
+  opacity: 0.8;
+}
+
+.music-player__btn:focus {
+  outline: none;
+}
+
+.music-player__btn:focus-visible {
+  outline: 2px solid #e0bfc4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+#spotify-playback-sink {
+  position: fixed !important;
+  left: -9999px !important;
+  bottom: 0 !important;
+  width: 300px !important;
+  height: 80px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}

@@ -7,9 +7,8 @@ function headerLinkClass(href) {
     : "site-header__link";
 }
 
-class SpecialHeader extends HTMLElement {
-  connectedCallback() {
-    this.innerHTML = `
+function renderSiteHeader() {
+  return `
       <nav class="site-header">
         <a href="index.html" class="site-header__logo-link">
           <span class="site-header__logo-wrap">
@@ -33,6 +32,17 @@ class SpecialHeader extends HTMLElement {
         </div>
       </nav>
     `;
+}
+
+window.refreshSiteHeader = function () {
+  document.querySelectorAll("special-header").forEach(function (header) {
+    header.innerHTML = renderSiteHeader();
+  });
+};
+
+class SpecialHeader extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML = renderSiteHeader();
   }
 }
 
@@ -46,5 +56,21 @@ class SpecialFooter extends HTMLElement {
   }
 }
 
+class FlairTrail extends HTMLElement {
+  connectedCallback() {
+    if (this.childElementCount) return;
+
+    this.classList.add("flair-trail");
+    this.setAttribute("aria-hidden", "true");
+    var srcs = [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8];
+    this.innerHTML = srcs
+      .map(function (n) {
+        return '<img class="flair" src="assets/flair-' + n + '.png" alt="" />';
+      })
+      .join("");
+  }
+}
+
+customElements.define("flair-trail", FlairTrail);
 customElements.define("special-header", SpecialHeader);
 customElements.define("special-footer", SpecialFooter);

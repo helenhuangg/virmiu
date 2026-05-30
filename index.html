@@ -6,11 +6,25 @@
     <title>elise · ʚɞ</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="music-player.css" />
   </head>
   <body>
+    <flair-trail></flair-trail>
     <special-header></special-header>
 
     <main>
+      <svg
+        class="main-bg"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMin slice"
+        aria-hidden="true"
+      >
+        <path
+          class="path"
+          fill="#e0bfc4"
+          d="M 0 100 V 100 Q 50 100 100 100 V 100 z"
+        />
+      </svg>
       <div class="main-content">
         <div class="hero-scale">
           <div class="main-hero">
@@ -21,6 +35,26 @@
               <h5 class="element">&amp;</h5>
               <h5 class="element">re-texture modder</h5>
             </div>
+            <div class="links">
+              <a
+                href="https://www.nexusmods.com/profile/kyurina"
+                class="icon-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src="assets/nexus.svg" alt="" class="icon" />
+                <span class="icon-link__label">view nexus mods</span>
+              </a>
+              <a
+                href="https://ko-fi.com/fuanrei"
+                class="icon-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src="assets/kofi.svg" alt="" class="icon" />
+                <span class="icon-link__label">view ko-fi</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -28,8 +62,12 @@
 
     <special-footer></special-footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/MorphSVGPlugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.13.0/lottie.min.js"></script>
     <script src="./headerFooterManager.js"></script>
+    <script src="music-player.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

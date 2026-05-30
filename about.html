@@ -6,8 +6,10 @@
     <title>about · elise</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="music-player.css" />
   </head>
   <body>
+    <flair-trail></flair-trail>
     <special-header></special-header>
     <main>
       <div class="container container--about">
@@ -85,14 +87,41 @@
 
           <p class="about-ps">
             p.s. i also do art commissions, learn more on
-            <a href="https://fuanrei.carrd.co/" target="_blank">my other site</a
+            <a
+              href="https://fuanrei.carrd.co/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >my other site</a
             >.
           </p>
+
+          <div class="links links--about">
+            <a
+              href="https://www.nexusmods.com/profile/kyurina"
+              class="icon-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="assets/nexus.svg" alt="" class="icon" />
+              <span class="icon-link__label">view nexus mods</span>
+            </a>
+            <a
+              href="https://ko-fi.com/fuanrei"
+              class="icon-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src="assets/kofi.svg" alt="" class="icon" />
+              <span class="icon-link__label">view ko-fi</span>
+            </a>
+          </div>
         </div>
       </div>
     </main>
     <special-footer></special-footer>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
     <script src="headerFooterManager.js"></script>
+    <script src="music-player.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
