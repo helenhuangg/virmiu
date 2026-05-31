@@ -1,11 +1,12 @@
 (function () {
-  var PLAYLIST_ID = "2odXT4RgSh3UDTHnd8p1ip";
+  var PLAYLIST_ID = "1wNBBvcJJZ6ZHM3WcLDOAT";
   var STORAGE_KEY = "elise-music-player-expanded";
   var SESSION_TRACK_ID = "elise-music-player-track-id";
   var SESSION_TRACK_INDEX = "elise-music-player-track-index";
   var SESSION_PLAYING = "elise-music-player-playing";
   var SESSION_ACTIVE = "elise-music-player-active";
   var SESSION_POSITION = "elise-music-player-position";
+  var SESSION_PLAYLIST_ID = "elise-music-player-playlist-id";
   var embedApiReady = false;
   var embedApiQueue = [];
   var spotifyIFrameAPI = null;
@@ -19,12 +20,15 @@
   var pendingSeekMs = 0;
   var sessionPlaying = false;
   var sessionRestoreStarted = false;
+  var playbackWasPlaying = false;
+  var trackReachedNearEnd = false;
+  var autoAdvancing = false;
 
   function readSessionState() {
     try {
       var trackIndex = parseInt(
         sessionStorage.getItem(SESSION_TRACK_INDEX),
-        10
+        10,
       );
       return {
         trackId: sessionStorage.getItem(SESSION_TRACK_ID),
@@ -63,7 +67,7 @@
       ) {
         sessionStorage.setItem(
           SESSION_POSITION,
-          String(lastPlaybackData.position)
+          String(lastPlaybackData.position),
         );
       }
     } catch (e) {}
@@ -81,10 +85,7 @@
       var byId = indexForTrackId(session.trackId);
       if (byId >= 0) return byId;
     }
-    if (
-      session.trackIndex >= 0 &&
-      session.trackIndex < playlistTracks.length
-    ) {
+    if (session.trackIndex >= 0 && session.trackIndex < playlistTracks.length) {
       return session.trackIndex;
     }
     return 0;
@@ -106,6 +107,19 @@
       })
       .then(function (data) {
         playlistTracks = data.tracks || [];
+        if (data.playlistId) {
+          try {
+            var storedPlaylistId = sessionStorage.getItem(SESSION_PLAYLIST_ID);
+            if (storedPlaylistId && storedPlaylistId !== data.playlistId) {
+              sessionStorage.removeItem(SESSION_TRACK_ID);
+              sessionStorage.removeItem(SESSION_TRACK_INDEX);
+              sessionStorage.removeItem(SESSION_PLAYING);
+              sessionStorage.removeItem(SESSION_ACTIVE);
+              sessionStorage.removeItem(SESSION_POSITION);
+            }
+            sessionStorage.setItem(SESSION_PLAYLIST_ID, data.playlistId);
+          } catch (e) {}
+        }
         return playlistTracks;
       })
       .catch(function () {
@@ -201,7 +215,7 @@
           }).observe(sink, { childList: true, subtree: true });
           attachListeners(controller);
           if (done) done(controller);
-        }
+        },
       );
     });
   }
@@ -214,16 +228,92 @@
 
     currentTrackIndex = index;
     var track = playlistTracks[index];
+    var shouldAutoplay = autoplay !== false;
+    resetAutoAdvanceState();
     applyCachedTrack(track, true);
     markSessionActive();
+    pendingSeekMs = 0;
     saveSessionState();
-    mountController("spotify:track:" + track.id, autoplay !== false, done);
+    mountController(
+      "spotify:track:" + track.id,
+      shouldAutoplay,
+      function (controller) {
+        if (shouldAutoplay) {
+          syncPlayingState(true);
+        }
+        if (done) done(controller);
+      },
+    );
   }
 
-  function skipTrack(delta, done) {
-    var index = getCurrentTrackIndex();
-    if (index < 0) index = 0;
-    playTrackAtIndex(index + delta, true, done);
+  function skipTrack(delta, shouldAutoplay, done) {
+    if (shouldAutoplay === undefined) {
+      shouldAutoplay = sessionPlaying;
+    }
+    loadEmbedScript();
+    whenEmbedApiReady(function () {
+      loadPlaylistTracks().then(function () {
+        if (!playlistTracks.length) return;
+        var index = getCurrentTrackIndex();
+        if (index < 0) index = 0;
+        playTrackAtIndex(index + delta, shouldAutoplay, done);
+      });
+    });
+  }
+
+  function resetAutoAdvanceState() {
+    playbackWasPlaying = false;
+    trackReachedNearEnd = false;
+  }
+
+  function trackDurationMs(data) {
+    if (data && data.duration) return data.duration;
+    var idx = getCurrentTrackIndex();
+    if (idx >= 0 && playlistTracks[idx] && playlistTracks[idx].durationMs) {
+      return playlistTracks[idx].durationMs;
+    }
+    return 0;
+  }
+
+  function maybeAutoAdvanceNext(data) {
+    if (autoAdvancing || !playlistTracks.length || !data) return;
+
+    var paused = data.is_paused !== undefined ? data.is_paused : data.isPaused;
+    if (paused === undefined) return;
+
+    var position = data.position || 0;
+    var duration = trackDurationMs(data);
+    var isPlaying = !paused;
+
+    if (duration > 0 && isPlaying && position >= duration - 1000) {
+      trackReachedNearEnd = true;
+    }
+
+    var endedAtPosition =
+      duration > 0 &&
+      (position >= duration - 400 || (trackReachedNearEnd && position < 1500));
+
+    if (
+      trackReachedNearEnd &&
+      playbackWasPlaying &&
+      paused &&
+      endedAtPosition
+    ) {
+      autoAdvancing = true;
+      resetAutoAdvanceState();
+      skipTrack(1, true, function (c) {
+        document.querySelectorAll("music-player").forEach(function (el) {
+          el.controller = c;
+        });
+        saveSessionState();
+        window.setTimeout(function () {
+          autoAdvancing = false;
+        }, 1200);
+      });
+      return;
+    }
+
+    playbackWasPlaying = isPlaying;
   }
 
   function syncTrackFromPlayback(data) {
@@ -311,6 +401,11 @@
             } catch (e) {}
           }, 200);
         }
+        window.setTimeout(function () {
+          try {
+            controller.play();
+          } catch (e) {}
+        }, 400);
       } else {
         controller.pause();
       }
@@ -318,6 +413,7 @@
 
     controller.addListener("playback_update", function (e) {
       lastPlaybackData = e.data;
+      maybeAutoAdvanceNext(e.data);
       syncTrackFromPlayback(e.data);
       var paused =
         e.data.is_paused !== undefined ? e.data.is_paused : e.data.isPaused;
@@ -333,6 +429,7 @@
     controller.addListener("playback_started", function (e) {
       if (!e.data) return;
       pendingAutoplay = false;
+      resetAutoAdvanceState();
       sessionPlaying = true;
       syncTrackFromPlayback({ playingURI: e.data.playingURI });
       var id = trackIdFromUri(e.data.playingURI);
@@ -358,34 +455,29 @@
     }
 
     var session = readSessionState();
-    if (session.active) {
-      loadPlaylistTracks().then(function () {
-        var index = resolveSavedTrackIndex(session);
-        currentTrackIndex = index;
-        var track = playlistTracks[index];
-        if (track) {
-          applyCachedTrack(track, false);
-          mountController(
-            "spotify:track:" + track.id,
-            session.playing,
-            onReady
-          );
-          if (session.playing && session.position > 0) {
-            pendingSeekMs = session.position;
-          }
-          syncPlayingState(session.playing);
-          return;
-        }
+    loadEmbedScript();
+    loadPlaylistTracks().then(function () {
+      if (!playlistTracks.length) {
         mountController("spotify:playlist:" + PLAYLIST_ID, false, onReady);
-      });
-      return;
-    }
+        return;
+      }
 
-    mountController("spotify:playlist:" + PLAYLIST_ID, false, onReady);
+      var index = session.active ? resolveSavedTrackIndex(session) : 0;
+      currentTrackIndex = index;
+      var track = playlistTracks[index];
+      applyCachedTrack(track, false);
+      mountController("spotify:track:" + track.id, false, onReady);
+      if (session.active && session.playing && session.position > 0) {
+        pendingSeekMs = session.position;
+      }
+      if (session.active) {
+        syncPlayingState(session.playing);
+      }
+    });
   }
 
   function loadEmbedScript() {
-    if (document.querySelector('script[data-spotify-embed-api]')) return;
+    if (document.querySelector("script[data-spotify-embed-api]")) return;
     var s = document.createElement("script");
     s.src = "https://open.spotify.com/embed/iframe-api/v1";
     s.async = true;
@@ -610,7 +702,7 @@
       this.classList.toggle("is-expanded", expanded);
       this.coverEl.setAttribute(
         "aria-label",
-        expanded ? "Album cover" : "Open music player"
+        expanded ? "Album cover" : "Open music player",
       );
       if (persist === false) return;
       try {
@@ -629,26 +721,24 @@
     onPrev() {
       var self = this;
       markSessionActive();
-      this.prepareEmbed(function () {
-        loadPlaylistTracks().then(function () {
-          skipTrack(-1, function (c) {
-            self.controller = c;
-            saveSessionState();
-          });
-        });
+      if (!this.embedRequested) {
+        this.embedRequested = true;
+      }
+      skipTrack(-1, sessionPlaying, function (c) {
+        self.controller = c;
+        saveSessionState();
       });
     }
 
     onNext() {
       var self = this;
       markSessionActive();
-      this.prepareEmbed(function () {
-        loadPlaylistTracks().then(function () {
-          skipTrack(1, function (c) {
-            self.controller = c;
-            saveSessionState();
-          });
-        });
+      if (!this.embedRequested) {
+        this.embedRequested = true;
+      }
+      skipTrack(1, sessionPlaying, function (c) {
+        self.controller = c;
+        saveSessionState();
       });
     }
 
@@ -696,11 +786,7 @@
       if (!data) return;
 
       var id = trackIdFromUri(data.playingURI);
-      if (
-        !id &&
-        data.track_window &&
-        data.track_window.current_track
-      ) {
+      if (!id && data.track_window && data.track_window.current_track) {
         id = data.track_window.current_track.id;
       }
 
@@ -721,7 +807,7 @@
             .map(function (a) {
               return a.name;
             })
-            .join(", ")
+            .join(", "),
         );
         this.setCover(trackCoverUrl(legacyTrack));
       } else if (id) {

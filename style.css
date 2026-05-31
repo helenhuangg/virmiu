@@ -423,6 +423,13 @@ special-footer {
   gap: clamp(1rem, 3vw, 1.5rem);
 }
 
+@media (max-width: 767px) {
+  .commission-page {
+    max-width: min(95vw, var(--commission-svg-width));
+    padding-inline: clamp(0.625rem, 2vw, 1rem);
+  }
+}
+
 @media (min-width: 768px) {
   .commission-page {
     max-width: min(92vw, var(--commission-dotted-max));
