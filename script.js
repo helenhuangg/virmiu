@@ -33,9 +33,13 @@ function initMainBgMorph() {
   if (!path) return;
 
   gsap.registerPlugin(MorphSVGPlugin);
+  gsap.killTweensOf(path);
 
+  var collapsed = "M 0 100 V 100 Q 50 100 100 100 V 100 z";
   var start = "M 0 100 V 50 Q 50 0 100 50 V 100 z";
   var end = "M 0 100 V 0 Q 50 0 100 0 V 100 z";
+
+  path.setAttribute("d", collapsed);
 
   gsap
     .timeline()
@@ -115,6 +119,9 @@ function initElementDrag() {
   if (!heroScale || !elements.length) return;
 
   elements.forEach(function (element) {
+    if (element.dataset.dragReady) return;
+    element.dataset.dragReady = "1";
+
     element.addEventListener("mousedown", function (e) {
       e.preventDefault();
 
@@ -208,9 +215,17 @@ function initSplitTextReveal() {
   if (!splitEls.length) return;
 
   gsap.registerPlugin(SplitText);
-  gsap.set(".split", { opacity: 1 });
 
-  document.fonts.ready.then(function () {
+  splitEls.forEach(function (text) {
+    if (text._eliseSplit) {
+      text._eliseSplit.revert();
+      text._eliseSplit = null;
+    }
+    gsap.killTweensOf(text);
+    gsap.set(text, { opacity: 1 });
+  });
+
+  function runSplitReveal() {
     var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
     gsap.utils.toArray(".split").forEach(function (text) {
@@ -219,6 +234,7 @@ function initSplitTextReveal() {
         mask: "lines",
         linesClass: "line",
       });
+      text._eliseSplit = split;
 
       tl.from(
         split.lines,
@@ -230,7 +246,13 @@ function initSplitTextReveal() {
         "-=0.4",
       );
     });
-  });
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(runSplitReveal).catch(runSplitReveal);
+  } else {
+    runSplitReveal();
+  }
 }
 
 function initTaglineSplitText() {
@@ -241,7 +263,18 @@ function initTaglineSplitText() {
 
   gsap.registerPlugin(SplitText);
 
-  document.fonts.ready.then(function () {
+  elements.forEach(function (el) {
+    gsap.killTweensOf(el);
+    if (el._eliseSplit) {
+      el._eliseSplit.revert();
+      el._eliseSplit = null;
+    }
+    el.classList.remove("element--whole");
+    gsap.set(el, { clearProps: "transform,clipPath,y,opacity,rotation" });
+    gsap.set(el, { opacity: 0 });
+  });
+
+  function runTaglineReveal() {
     var tl = gsap.timeline({
       defaults: { duration: 0.75, ease: "back.out(2.4)" },
     });
@@ -267,6 +300,7 @@ function initTaglineSplitText() {
         type: "words",
         wordsClass: "word++",
       });
+      el._eliseSplit = split;
 
       tl.from(
         split.words,
@@ -274,7 +308,13 @@ function initTaglineSplitText() {
         position,
       );
     });
-  });
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(runTaglineReveal).catch(runTaglineReveal);
+  } else {
+    runTaglineReveal();
+  }
 }
 
 function initAboutReveal() {

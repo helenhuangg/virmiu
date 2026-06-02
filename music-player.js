@@ -579,9 +579,13 @@
 
         saveSessionState();
 
-        if (window.initElisePage) {
-          window.initElisePage();
-        }
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (window.initElisePage) {
+              window.initElisePage();
+            }
+          });
+        });
       })
       .catch(function () {
         window.location.href = url;

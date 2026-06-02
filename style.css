@@ -488,7 +488,7 @@ special-footer {
   margin: 0;
   padding: 0 0.75rem;
   font-family: "Drowner", sans-serif;
-  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-size: clamp(1.5rem, 3vw, 1.8rem);
   font-weight: normal;
   color: #e0bfc4;
   text-transform: uppercase;
@@ -497,7 +497,7 @@ special-footer {
 
 .deco-elise {
   display: block;
-  width: min(100%, 25.345rem);
+  width: min(100%, 18rem);
   height: auto;
 }
 
@@ -656,7 +656,8 @@ h6 {
 .icon {
   display: block;
   width: clamp(2rem, 5vw, 2.5rem);
-  height: auto;
+  height: clamp(2rem, 5vw, 2.5rem);
+  object-fit: contain;
 }
 
 .icon-link {
@@ -715,4 +716,3 @@ h6 {
   transform: none;
   margin-top: clamp(0.5rem, 2vw, 1rem);
 }
-
