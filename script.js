@@ -363,15 +363,25 @@ function initAboutReveal() {
   }
 }
 
-window.initElisePage = function () {
-  initLottie();
-  initMainBgMorph();
-  initFlairCursor();
+// Everything here works on copy that comes from the CMS, so it has to wait for it.
+function initContentReveals() {
   initElementDrag();
   initIconLinkCursor();
   initSplitTextReveal();
   initTaglineSplitText();
   initAboutReveal();
+}
+
+window.initElisePage = function () {
+  initLottie();
+  initMainBgMorph();
+  initFlairCursor();
+
+  if (window.initSanityContent) {
+    window.initSanityContent(initContentReveals);
+  } else {
+    initContentReveals();
+  }
 };
 
 window.initElisePage();

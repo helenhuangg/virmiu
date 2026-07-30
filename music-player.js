@@ -1,5 +1,7 @@
 (function () {
   var PLAYLIST_ID = "1wNBBvcJJZ6ZHM3WcLDOAT";
+  var TRACK_ID_PATTERN =
+    /(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?track\/|spotify:track:)([a-zA-Z0-9]{22})|^([a-zA-Z0-9]{22})$/;
   var STORAGE_KEY = "elise-music-player-expanded";
   var SESSION_TRACK_ID = "elise-music-player-track-id";
   var SESSION_TRACK_INDEX = "elise-music-player-track-index";
@@ -23,6 +25,8 @@
   var playbackWasPlaying = false;
   var trackReachedNearEnd = false;
   var autoAdvancing = false;
+  var fallbackPlaylistId = PLAYLIST_ID;
+  var oembedRequested = {};
 
   function readSessionState() {
     try {
@@ -99,27 +103,86 @@
     saveSessionState();
   }
 
+  function parseTrackId(value) {
+    if (!value) return null;
+    var match = String(value).trim().match(TRACK_ID_PATTERN);
+    if (!match) return null;
+    return match[1] || match[2] || null;
+  }
+
+  // Titles and cover art are left empty here and filled in from Spotify on demand,
+  // so the only thing that has to be typed into the CMS is the song link.
+  function playlistFromContent(playlist) {
+    if (!playlist || !Array.isArray(playlist.tracks)) return null;
+
+    var tracks = [];
+    playlist.tracks.forEach(function (track) {
+      var id = parseTrackId(track.spotifyUrl);
+      if (!id) return;
+      tracks.push({
+        id: id,
+        name: track.title || "",
+        artist: track.artist || "",
+        cover: "",
+      });
+    });
+
+    if (!tracks.length) return null;
+    return {playlistId: playlist.playlistId || null, tracks: tracks};
+  }
+
+  function loadPlaylistFromCms() {
+    if (!window.eliseContent || !window.eliseContent.load) {
+      return Promise.resolve(null);
+    }
+    return window.eliseContent
+      .load()
+      .then(function (content) {
+        return content ? playlistFromContent(content.playlist) : null;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  // Changing the track list invalidates a saved position, which would otherwise
+  // resume halfway through whatever song now sits at that index.
+  function playlistSignature(tracks) {
+    return tracks
+      .map(function (track) {
+        return track.id;
+      })
+      .join(",");
+  }
+
+  function syncPlaylistSession(tracks) {
+    try {
+      var signature = playlistSignature(tracks);
+      var stored = sessionStorage.getItem(SESSION_PLAYLIST_ID);
+      if (stored && stored !== signature) {
+        sessionStorage.removeItem(SESSION_TRACK_ID);
+        sessionStorage.removeItem(SESSION_TRACK_INDEX);
+        sessionStorage.removeItem(SESSION_PLAYING);
+        sessionStorage.removeItem(SESSION_ACTIVE);
+        sessionStorage.removeItem(SESSION_POSITION);
+      }
+      sessionStorage.setItem(SESSION_PLAYLIST_ID, signature);
+    } catch (e) {}
+  }
+
   function loadPlaylistTracks() {
     if (playlistLoadPromise) return playlistLoadPromise;
-    playlistLoadPromise = fetch("assets/playlist-tracks.json")
-      .then(function (r) {
-        return r.json();
+    playlistLoadPromise = loadPlaylistFromCms()
+      .then(function (playlist) {
+        if (playlist) return playlist;
+        return fetch("assets/playlist-tracks.json").then(function (r) {
+          return r.json();
+        });
       })
       .then(function (data) {
         playlistTracks = data.tracks || [];
-        if (data.playlistId) {
-          try {
-            var storedPlaylistId = sessionStorage.getItem(SESSION_PLAYLIST_ID);
-            if (storedPlaylistId && storedPlaylistId !== data.playlistId) {
-              sessionStorage.removeItem(SESSION_TRACK_ID);
-              sessionStorage.removeItem(SESSION_TRACK_INDEX);
-              sessionStorage.removeItem(SESSION_PLAYING);
-              sessionStorage.removeItem(SESSION_ACTIVE);
-              sessionStorage.removeItem(SESSION_POSITION);
-            }
-            sessionStorage.setItem(SESSION_PLAYLIST_ID, data.playlistId);
-          } catch (e) {}
-        }
+        if (data.playlistId) fallbackPlaylistId = data.playlistId;
+        syncPlaylistSession(playlistTracks);
         return playlistTracks;
       })
       .catch(function () {
@@ -179,6 +242,36 @@
       if (track.cover) el.setCover(track.cover);
       el.lastTrackId = track.id;
     });
+    hydrateTrack(track);
+  }
+
+  // Spotify's public oEmbed endpoint gives us the title and cover art for a track id,
+  // so those never have to be filled in by hand.
+  function hydrateTrack(track) {
+    if (!track || !track.id) return;
+    if (track.name && track.cover) return;
+    if (oembedRequested[track.id]) return;
+    oembedRequested[track.id] = true;
+
+    fetch(
+      "https://open.spotify.com/oembed?url=https://open.spotify.com/track/" +
+        track.id,
+    )
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (!track.name && data.title) track.name = data.title;
+        if (!track.cover && data.thumbnail_url) track.cover = data.thumbnail_url;
+
+        var current =
+          currentTrackIndex >= 0 ? playlistTracks[currentTrackIndex] : null;
+        if (current && current.id === track.id) {
+          applyCachedTrack(track, false);
+        }
+      })
+      .catch(function () {});
   }
 
   function stylePlaybackIframe(iframe) {
@@ -458,7 +551,7 @@
     loadEmbedScript();
     loadPlaylistTracks().then(function () {
       if (!playlistTracks.length) {
-        mountController("spotify:playlist:" + PLAYLIST_ID, false, onReady);
+        mountController("spotify:playlist:" + fallbackPlaylistId, false, onReady);
         return;
       }
 

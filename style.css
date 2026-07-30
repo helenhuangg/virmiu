@@ -370,6 +370,7 @@ special-footer {
 
 .dotted-container {
   width: 100%;
+  min-width: 0;
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -382,6 +383,7 @@ special-footer {
 
 .tos-section {
   width: 100%;
+  min-width: 0;
 }
 
 .tos-section-list {
@@ -389,13 +391,58 @@ special-footer {
   flex-direction: column;
   gap: clamp(0.5rem, 2vw, 0.75rem);
   margin-top: 0.5rem;
-  padding-left: clamp(0.25rem, 2vw, 1rem);
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.tos-section-list-item,
+h6 {
+  font-family: "Cooper", sans-serif;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+  line-height: 1.45;
+  font-weight: normal;
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.tos-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  width: 100%;
+  min-width: 0;
+}
+
+.tos-item-note {
+  position: relative;
+  margin: 0;
+  padding-left: 1.6em;
+  font-family: "Cooper", sans-serif;
+  font-size: clamp(0.75rem, 2.2vw, 0.875rem);
+  line-height: 1.45;
+  color: #6f6668;
+  overflow-wrap: break-word;
+}
+
+.tos-item-note::before {
+  content: ">>";
+  position: absolute;
+  left: 0;
+  color: #e0bfc4;
 }
 
 .tos-section-title {
   font-size: clamp(1.9rem, 4vw, 2.5rem);
   font-family: "Drowner", sans-serif;
-  padding: 0.1em 0.5em;
+  padding: 0.1em 0;
   margin: 0;
   color: #e0bfc4;
   -webkit-text-stroke: clamp(2px, 0.2vw, 3px) #262223;
@@ -584,18 +631,6 @@ special-footer {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-}
-
-.tos-section-list-item,
-h6 {
-  font-family: "Cooper", sans-serif;
-  font-size: clamp(0.875rem, 2.5vw, 1rem);
-  line-height: 1.45;
-  font-weight: normal;
-  margin: 0;
-  padding: 0;
-  max-width: 100%;
-  text-align: left;
 }
 
 .tos-section-list-item b,
