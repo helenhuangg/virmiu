@@ -422,21 +422,12 @@ h6 {
 }
 
 .tos-item-note {
-  position: relative;
   margin: 0;
-  padding-left: 1.6em;
   font-family: "Cooper", sans-serif;
   font-size: clamp(0.75rem, 2.2vw, 0.875rem);
   line-height: 1.45;
   color: #6f6668;
   overflow-wrap: break-word;
-}
-
-.tos-item-note::before {
-  content: ">>";
-  position: absolute;
-  left: 0;
-  color: #e0bfc4;
 }
 
 .tos-section-title {
