@@ -36,6 +36,22 @@ export const commissionPage = defineType({
       description: 'Optional. Added after the status, e.g. "2 slots left" or "back in august".',
     }),
     defineField({
+      name: 'queueLabel',
+      title: 'Queue link text',
+      type: 'string',
+      group: 'status',
+      description: 'Shown under the status. Leave empty to hide the link.',
+      initialValue: 'view commission queue',
+    }),
+    defineField({
+      name: 'queueUrl',
+      title: 'Queue link',
+      type: 'url',
+      group: 'status',
+      description: 'Google Sheet (or any URL) for the current commission queue.',
+      validation: (rule) => rule.uri({scheme: ['http', 'https']}),
+    }),
+    defineField({
       name: 'pricingTitle',
       title: 'Section heading',
       type: 'string',

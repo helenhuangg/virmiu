@@ -368,6 +368,23 @@ special-footer {
   text-transform: uppercase;
 }
 
+.commission-queue {
+  margin: 0;
+  font-family: "Cooper", sans-serif;
+  font-size: clamp(0.8125rem, 2vw, 0.9375rem);
+  line-height: 1.4;
+}
+
+.commission-queue a {
+  color: #262223;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.commission-queue a:hover {
+  color: #e0bfc4;
+}
+
 .dotted-container {
   width: 100%;
   min-width: 0;

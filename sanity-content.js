@@ -6,7 +6,7 @@
 
   var QUERY = [
     "{",
-    '"commission": *[_id == "commissionPage"][0]{status, statusNote, pricingTitle,',
+    '"commission": *[_id == "commissionPage"][0]{status, statusNote, queueLabel, queueUrl, pricingTitle,',
     "pricing[]{_key, name, price, description}, pricingFootnote, paymentTitle, paymentTerms},",
     '"about": *[_id == "aboutPage"][0]{heading, rows[]{_key, label, body}, postscript},',
     '"home": *[_id == "homePage"][0]{taglineLines},',
@@ -158,6 +158,21 @@
       var statusText = "commission status: " + status;
       if (commission.statusNote) statusText += " — " + commission.statusNote;
       changed = setHtml("commission-status", escapeHtml(statusText)) || changed;
+    }
+
+    if (commission.queueUrl) {
+      var queueLabel = commission.queueLabel || "view commission queue";
+      changed =
+        setHtml(
+          "commission-queue",
+          '<a href="' +
+            escapeHtml(commission.queueUrl) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            escapeHtml(queueLabel) +
+            "</a>",
+        ) || changed;
+    } else {
+      changed = setHtml("commission-queue", "") || changed;
     }
 
     if (commission.pricingTitle) {
