@@ -923,6 +923,7 @@ main:has(.gallery-page) {
   font-size: 14px;
   color: #777;
   margin: 0;
+  text-align: center;
 }
 
 @media (max-width: 767px) {
