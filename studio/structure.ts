@@ -1,6 +1,7 @@
 import type {StructureResolver} from 'sanity/structure'
 import {CogIcon} from '@sanity/icons/Cog'
 import {HomeIcon} from '@sanity/icons/Home'
+import {ImagesIcon} from '@sanity/icons/Images'
 import {PlayIcon} from '@sanity/icons/Play'
 import {TagIcon} from '@sanity/icons/Tag'
 import {UserIcon} from '@sanity/icons/User'
@@ -11,6 +12,7 @@ import {UserIcon} from '@sanity/icons/User'
  */
 const singletons = [
   {type: 'commissionPage', title: 'Commission page', icon: TagIcon},
+  {type: 'galleryPage', title: 'Gallery page', icon: ImagesIcon},
   {type: 'aboutPage', title: 'About page', icon: UserIcon},
   {type: 'homePage', title: 'Home page', icon: HomeIcon},
   {type: 'musicPlaylist', title: 'Music player', icon: PlayIcon},

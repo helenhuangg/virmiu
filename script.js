@@ -363,6 +363,57 @@ function initAboutReveal() {
   }
 }
 
+var galleryObserver = null;
+
+// Cards fade up as they scroll into view; cards entering together are staggered.
+function revealGalleryCards(section) {
+  if (typeof gsap === "undefined" || !section) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  var cards = gsap.utils.toArray(section.querySelectorAll(".gallery-card"));
+  if (!cards.length) return;
+  section.dataset.revealed = "1";
+
+  if (galleryObserver) galleryObserver.disconnect();
+  gsap.killTweensOf(cards);
+  gsap.set(cards, { opacity: 0, y: 28 });
+
+  galleryObserver = new IntersectionObserver(
+    function (entries) {
+      var entering = entries
+        .filter(function (entry) {
+          return entry.isIntersecting;
+        })
+        .map(function (entry) {
+          galleryObserver.unobserve(entry.target);
+          return entry.target;
+        });
+      if (!entering.length) return;
+      gsap.to(entering, {
+        opacity: 1,
+        y: 0,
+        duration: 0.85,
+        ease: "power3.out",
+        stagger: 0.08,
+        clearProps: "transform",
+      });
+    },
+    { rootMargin: "0px 0px -8% 0px" },
+  );
+  cards.forEach(function (card) {
+    galleryObserver.observe(card);
+  });
+}
+
+function initGalleryReveal() {
+  var section = document.querySelector(".gallery-section:not([hidden])");
+  if (section && section.dataset.revealed !== "1") revealGalleryCards(section);
+}
+
+document.addEventListener("gallery:change", function (event) {
+  revealGalleryCards(event.detail && event.detail.section);
+});
+
 // Everything here works on copy that comes from the CMS, so it has to wait for it.
 function initContentReveals() {
   initElementDrag();
@@ -370,6 +421,7 @@ function initContentReveals() {
   initSplitTextReveal();
   initTaglineSplitText();
   initAboutReveal();
+  initGalleryReveal();
 }
 
 window.initElisePage = function () {

@@ -4,6 +4,20 @@
   var API_VERSION = "v2026-07-01";
   var LOAD_TIMEOUT_MS = 2500;
 
+  // Same order as galleryCategories in studio/schemaTypes/documents/gallery-page.ts; the first tab opens by default.
+  var GALLERY_CATEGORIES = [
+    { value: "remesh", title: "Remesh" },
+    { value: "retexture", title: "Retexture" },
+    { value: "customAccessory", title: "Custom Accessory" },
+    { value: "misc", title: "Misc." },
+  ];
+  var GALLERY_MAX_WIDTH = 1140;
+
+  var GALLERY_ROWS_PROJECTION =
+    '[]{_key, columns, cards[defined(image.asset)]{_key, caption, "alt": image.alt,' +
+    ' "url": image.asset->url, "aspect": image.asset->metadata.dimensions.aspectRatio,' +
+    ' "lqip": image.asset->metadata.lqip}}';
+
   var QUERY = [
     "{",
     '"commission": *[_id == "commissionPage"][0]{status, statusNote, queueLabel, queueUrl, pricingTitle,',
@@ -12,7 +26,12 @@
     '"home": *[_id == "homePage"][0]{taglineLines},',
     '"settings": *[_id == "siteSettings"][0]{socialLinks[]{_key, label, url, icon,',
     '"customIcon": customIcon.asset->url}, footerCredit},',
-    '"playlist": *[_id == "musicPlaylist"][0]{playlistId, tracks[]{_key, spotifyUrl, title, artist}}',
+    '"playlist": *[_id == "musicPlaylist"][0]{playlistId, tracks[]{_key, spotifyUrl, title, artist}},',
+    '"gallery": *[_id == "galleryPage"][0]{' +
+      GALLERY_CATEGORIES.map(function (category) {
+        return '"' + category.value + '": ' + category.value + GALLERY_ROWS_PROJECTION;
+      }).join(", ") +
+      "}",
     "}",
   ].join(" ");
 
@@ -326,6 +345,131 @@
     return changed;
   }
 
+  function galleryImageUrl(url, displayWidth) {
+    var width = Math.min(2400, Math.ceil((displayWidth * 2) / 100) * 100);
+    return url + "?w=" + width + "&fit=max&auto=format";
+  }
+
+  function renderGalleryCard(card, share) {
+    var imageStyle = "aspect-ratio: " + (card.aspect || 16 / 9);
+    if (card.lqip) imageStyle += "; background-image: url(" + card.lqip + ")";
+
+    var html =
+      '<figure class="gallery-card" style="--share: ' +
+      share +
+      '"' +
+      (card.caption ? ' tabindex="0"' : "") +
+      '><img class="gallery-card__image" src="' +
+      escapeHtml(galleryImageUrl(card.url, GALLERY_MAX_WIDTH * share)) +
+      '" alt="' +
+      escapeHtml(card.alt) +
+      '" loading="lazy" decoding="async" style="' +
+      escapeHtml(imageStyle) +
+      '" />';
+    if (card.caption) {
+      html +=
+        '<figcaption class="gallery-card__caption">' +
+        escapeHtml(card.caption) +
+        "</figcaption>";
+    }
+    return html + "</figure>";
+  }
+
+  // Card widths follow each image's shape so every image in a row is the same height.
+  function renderGalleryRow(row) {
+    var cards = (row && row.cards) || [];
+    if (!cards.length) return "";
+
+    var slots = Math.max(row.columns || cards.length, cards.length);
+    var aspects = cards.map(function (card) {
+      return card.aspect || 16 / 9;
+    });
+    var total = aspects.reduce(function (sum, aspect) {
+      return sum + aspect;
+    }, 0);
+    // Empty slots count as average-width cards so a sparse row keeps full-row card sizes.
+    total += (slots - cards.length) * (total / cards.length);
+
+    return (
+      '<div class="gallery-row" style="--slots: ' +
+      slots +
+      '">' +
+      cards
+        .map(function (card, i) {
+          return renderGalleryCard(card, aspects[i] / total);
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  function applyGalleryFilter(category) {
+    hooks("gallery-rows").forEach(function (container) {
+      var hasCards = false;
+      container.querySelectorAll(".gallery-section").forEach(function (section) {
+        section.hidden = section.dataset.category !== category;
+        if (!section.hidden && section.querySelector(".gallery-card")) hasCards = true;
+      });
+      var empty = container.querySelector(".gallery-empty");
+      if (empty) empty.hidden = hasCards;
+    });
+
+    hooks("gallery-filters").forEach(function (container) {
+      container.querySelectorAll(".gallery-filter").forEach(function (button) {
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.category === category),
+        );
+      });
+    });
+  }
+
+  function renderGallery(gallery) {
+    if (!hooks("gallery-rows").length) return false;
+    gallery = gallery || {};
+
+    var filters = GALLERY_CATEGORIES.map(function (category) {
+      return (
+        '<button type="button" class="gallery-filter" data-category="' +
+        escapeHtml(category.value) +
+        '" aria-pressed="false">' +
+        escapeHtml(category.title) +
+        "</button>"
+      );
+    });
+    var sections = GALLERY_CATEGORIES.map(function (category) {
+      return (
+        '<div class="gallery-section" data-category="' +
+        escapeHtml(category.value) +
+        '" hidden>' +
+        (gallery[category.value] || []).map(renderGalleryRow).join("") +
+        "</div>"
+      );
+    });
+
+    var changed = setHtml("gallery-filters", filters.join(""));
+    changed =
+      setHtml(
+        "gallery-rows",
+        sections.join("") +
+          '<p class="gallery-empty" hidden>nothing here yet — check back soon!</p>',
+      ) || changed;
+    applyGalleryFilter(GALLERY_CATEGORIES[0].value);
+    return changed;
+  }
+
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest && event.target.closest(".gallery-filter");
+    if (!button || button.getAttribute("aria-pressed") === "true") return;
+    applyGalleryFilter(button.dataset.category);
+
+    // script.js plays the card entrance animation for the newly shown tab.
+    var section = document.querySelector(".gallery-section:not([hidden])");
+    document.dispatchEvent(
+      new CustomEvent("gallery:change", { detail: { section: section } }),
+    );
+  });
+
   // The page holds no copy of its own, so say something useful if the CMS is unreachable.
   function renderFallbackNotice() {
     var text = "couldn't load this right now — please refresh the page.";
@@ -341,6 +485,11 @@
         '<section class="about-row"><div class="about-copy"><p>' +
         text +
         "</p></div></section>";
+    });
+
+    hooks("gallery-rows").forEach(function (el) {
+      if (el.innerHTML.trim()) return;
+      el.innerHTML = '<p class="gallery-empty">' + text + "</p>";
     });
   }
 
@@ -365,6 +514,7 @@
           renderHome(content.home);
           renderSocialLinks(content.settings);
           renderFooter(content.settings);
+          renderGallery(content.gallery);
         } catch (e) {}
       } else {
         renderFallbackNotice();

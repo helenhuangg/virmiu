@@ -28,6 +28,7 @@ function renderSiteHeader() {
         <div class="site-header__links">
           <a href="index.html" class="${headerLinkClass("index.html")}">home</a>
           <a href="commission.html" class="${headerLinkClass("commission.html")}">commission</a>
+          <a href="gallery.html" class="${headerLinkClass("gallery.html")}">gallery</a>
           <a href="about.html" class="${headerLinkClass("about.html")}">about</a>
         </div>
       </nav>

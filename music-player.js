@@ -632,7 +632,8 @@
       return (
         page === "index.html" ||
         page === "about.html" ||
-        page === "commission.html"
+        page === "commission.html" ||
+        page === "gallery.html"
       );
     } catch (e) {
       return false;

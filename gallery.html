@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gallery · elise</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="music-player.css" />
+  </head>
+  <body>
+    <flair-trail></flair-trail>
+    <special-header></special-header>
+    <main>
+      <div class="gallery-page">
+        <h1 class="gallery-title">
+          <img src="assets/gallery.png" alt="Gallery" width="213" height="84" />
+        </h1>
+        <div
+          class="gallery-filters"
+          data-sanity="gallery-filters"
+          aria-label="Filter gallery"
+        ></div>
+        <div class="gallery-rows" data-sanity="gallery-rows"></div>
+      </div>
+    </main>
+    <special-footer></special-footer>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/MorphSVGPlugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.13.0/lottie.min.js"></script>
+    <script src="headerFooterManager.js"></script>
+    <script src="sanity-content.js"></script>
+    <script src="music-player.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
